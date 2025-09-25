@@ -1,0 +1,11 @@
+Types: deb deb-src
+URIs: http://tw.archive.ubuntu.com/ubuntu/
+Suites: devel devel-updates devel-backports
+Components: main restricted universe multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+Types: deb deb-src
+URIs: http://security.ubuntu.com/ubuntu/
+Suites: devel-security
+Components: main restricted universe multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg

@@ -1,0 +1,6 @@
+Types: deb
+URIs: https://packages.microsoft.com/ubuntu/25.04/prod/
+Suites: plucky
+Components: main
+Architectures: amd64
+Signed-By: /usr/share/keyrings/microsoft-prod.gpg

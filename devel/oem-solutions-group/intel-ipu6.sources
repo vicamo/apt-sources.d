@@ -1,0 +1,16 @@
+Types: deb
+URIs: https://ppa.launchpadcontent.net/oem-solutions-group/intel-ipu6/ubuntu/
+Suites: devel
+Components: main
+Signed-By: -----BEGIN PGP PUBLIC KEY BLOCK-----
+ .
+ mI0ESXTBrwEEAKgZuQ6btGuSdFSUFrruXUeZHA9ahBGSBoToj1iCXRBbCSDVK+8F
+ lA2Sb7YVsfCpgKO4tLIEqL6rDdxAV3VRjM9zu2wMtTfp0s9MKqb25O4/rEfJSwmQ
+ /1Tvqn6xfouzWwojiXCGpITa7RYwFKhUqc5wlIXc/xCgoX2AsdrIKX09ABEBAAG0
+ LUxhdW5jaHBhZCBQcml2YXRlIFBQQSBmb3IgT0VNIFNvbHV0aW9ucyBHcm91cIi2
+ BBMBAgAgBQJJdMGvAhsDBgsJCAcDAgQVAggDBBYCAwECHgECF4AACgkQtSuROkEI
+ Z2fgAAP9FT0NE87gByWiM1yvJAaRuoZg4UFtNrlkUHDJ4iKht/yTh+81WeLh5UBV
+ pae+YC+asC6oWyuR/9YBM6nuH6PX+DLDMREMcvKJ8PA7/C8N7oXq4q/cHL7cRM+a
+ WMW5+kSJaZHa2QfS3Yi5elt5Y6bpwEPwSo+BNMBg1LW0f68OGGg=
+ =zslS
+ -----END PGP PUBLIC KEY BLOCK-----

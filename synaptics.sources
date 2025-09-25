@@ -1,0 +1,5 @@
+Types: deb deb-src
+URIs: https://www.synaptics.com/sites/default/files/Ubuntu/
+Suites: stable
+Components: main non-free
+Signed-By: /usr/share/keyrings/synaptics-repository-keyring.gpg

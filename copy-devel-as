@@ -1,0 +1,7 @@
+#!/bin/bash
+
+[ -n "$1" ] || { echo "Missing series name." >&2; exit 1; }
+[ ! -d "$1" ] || { echo "Already have $1." >&2; exit 1; }
+
+cp -a devel "$1"
+find "$1" -name \*.sources | xargs sed -i "s,devel,$1,g"
