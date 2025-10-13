@@ -1,0 +1,16 @@
+Types: deb
+URIs: https://ppa.launchpadcontent.net/checkbox-dev/stable/ubuntu/
+Suites: questing
+Components: main
+Signed-By: -----BEGIN PGP PUBLIC KEY BLOCK-----
+ .
+ mI0ESZRIGAEEALihBkS1+WPsmLIq/y9i1Gc5vyPy7dqJVUscP38cjFsCnG8O+4Fe
+ P6mD/uJfVNBTcR3NjQ1jxwLISaIKndGu4J6n8xVPLWb/sesYy75WjgwUKC5lQnA6
+ 1UElBm4AJfydKOobWTMq2X4Gw71+uwtjdnujn3uJGYDmrARHYCkAT7snABEBAAG0
+ JUxhdW5jaHBhZCBQUEEgZm9yIENoZWNrYm94IERldmVsb3BlcnOItgQTAQIAIAUC
+ SZRIGAIbAwYLCQgHAwIEFQIIAwQWAgMBAh4BAheAAAoJEBtLay0rvfK9XKAEAJqo
+ rKQxdRidJTxMEirFmhaVD9plAqO/5uNXYFsVU0kSEEsk5Ps4F4lvLqWoupbPHuha
+ 6ngtNJf5HFNoCivFWSLawTA4tfF9RGuPozDHEpTbdLPqfpOKpFd1I9KMiGEhzCrQ
+ Dp8cYjZkdMDEPsO9A87S5BxpB9rwBj9cnYnpvbw5
+ =JBdy
+ -----END PGP PUBLIC KEY BLOCK-----

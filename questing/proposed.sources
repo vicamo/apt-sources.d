@@ -1,0 +1,5 @@
+Types: deb deb-src
+URIs: http://tw.archive.ubuntu.com/ubuntu/
+Suites: questing-proposed
+Components: main restricted universe multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
