@@ -1,5 +1,5 @@
 Types: deb
-URIs: https://packages.microsoft.com/ubuntu/xx.yy/prod/
+URIs: https://packages.microsoft.com/ubuntu/25.10/prod/
 Suites: questing
 Components: main
 Architectures: amd64
