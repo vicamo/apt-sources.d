@@ -2,8 +2,7 @@ Types: deb
 URIs: https://ppa.launchpadcontent.net/canonical-hwe-team/experimental-unstable/ubuntu/
 Suites: oracular
 Components: main
-Signed-By: 
- -----BEGIN PGP PUBLIC KEY BLOCK-----
+Signed-By: -----BEGIN PGP PUBLIC KEY BLOCK-----
  .
  mQINBGYzmj4BEACb4jDoTQ+4dEhlPl8JQegJ+a59UAsDZFRLw9IVLneto+mCBIOM
  YsyJk6yoqdH45yJA3+n9W4nYmrXUQjPPaB6f8vhzX0a8XIVxvAebImJijmqQZ/tQ

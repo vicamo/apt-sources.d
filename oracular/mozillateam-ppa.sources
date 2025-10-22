@@ -2,8 +2,7 @@ Types: deb
 URIs: https://ppa.launchpadcontent.net/mozillateam/ppa/ubuntu/
 Suites: devel
 Components: main
-Signed-By: 
- -----BEGIN PGP PUBLIC KEY BLOCK-----
+Signed-By: -----BEGIN PGP PUBLIC KEY BLOCK-----
  .
  mQINBGYov84BEADSrLhiWvqL3JJ3fTxjCGD4+viIUBS4eLSc7+Q7SyHm/wWfYNwT
  EqEvMMM9brWQyC7xyE2JBlVk5/yYHkAQz3f8rbkv6ge3J8Z7G4ZwHziI45xJKJ0M

@@ -2,8 +2,7 @@ Types: deb
 URIs: https://ppa.launchpadcontent.net/vicamo/intel-ipu/ubuntu/
 Suites: plucky
 Components: main
-Signed-By: 
- -----BEGIN PGP PUBLIC KEY BLOCK-----
+Signed-By: -----BEGIN PGP PUBLIC KEY BLOCK-----
  .
  mQINBFzMDH8BEACwmjEvGvgkxgXnP7jurWqXY7apOdEA3TYW2toF1QGFIstfCbbW
  dImdDJ6XRZvVx540nfrQCnlQ6aDSKvbEzNIizbuklIE77BslYJemCeyYBuHQRwRi
