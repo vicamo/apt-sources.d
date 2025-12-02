@@ -1,23 +1,23 @@
 Types: deb deb-src
-URIs: http://tw.archive.ubuntu.com/ubuntu/
+URIs: http://old-releases.ubuntu.com/ubuntu/
 Suites: oracular
 Components: main restricted universe multiverse
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
 Types: deb deb-src
-URIs: http://tw.archive.ubuntu.com/ubuntu/
+URIs: http://old-releases.ubuntu.com/ubuntu/
 Suites: oracular-updates
 Components: main restricted universe multiverse
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
 Types: deb deb-src
-URIs: http://tw.archive.ubuntu.com/ubuntu/
+URIs: http://old-releases.ubuntu.com/ubuntu/
 Suites: oracular-backports
 Components: main restricted universe multiverse
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
 Types: deb deb-src
-URIs: http://security.ubuntu.com/ubuntu/
+URIs: http://old-releases.ubuntu.com/ubuntu/
 Suites: oracular-security
 Components: main restricted universe multiverse
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
