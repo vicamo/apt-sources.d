@@ -1,0 +1,36 @@
+#!/bin/bash
+
+generate_current_link()
+{
+    local path="$1"; shift
+    local link="$1"; shift
+    ln -s "pool/current/$path" ".local/links/$link"
+}
+
+rm .local/links/*
+
+for sources in $(find . -maxdepth 1 -type f -name \*.sources); do
+    generate_current_link "$sources" "$sources"
+done
+
+IFS=$'\n' read -d '' -r -a all_sources < <( find . -mindepth 2 -type f -name \*.sources | sed -e 's,^\./[^/]\+/,,' | sort -u )
+for sources in "${all_sources[@]}"; do
+    case "$sources" in
+    */*)
+        owner="${sources%/*}"
+        repo="${sources#*/}"
+        repo="${repo%.sources}"
+        generate_current_link "$sources" "${owner}-ubuntu-${repo}-current.sources"
+        ;;
+    proposed.sources)
+        generate_current_link "$sources" "current-proposed.sources"
+        ;;
+    ubuntu.sources)
+        generate_current_link "$sources" "current.sources"
+        ;;
+    *)
+        repo="${sources%.sources}"
+        generate_current_link "$sources" "${repo}-current.sources"
+        ;;
+    esac
+done
