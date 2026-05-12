@@ -1,36 +1,125 @@
 #!/bin/bash
+#
+# Regenerate latest/ symlinks and .local/links/ for apt sources pool.
+#
 
-generate_current_link()
-{
-    local path="$1"; shift
-    local link="$1"; shift
-    ln -s "pool/current/$path" ".local/links/$link"
-}
+set -e
 
-rm .local/links/*
+POOL_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$POOL_DIR"
 
-for sources in $(find . -maxdepth 1 -type f -name \*.sources); do
-    generate_current_link "$sources" "$sources"
+# ---------------------------------------------------------------------------
+# Discover Ubuntu series directories in chronological order.
+# "devel" is an alias for the not-yet-released series; include it.
+# ---------------------------------------------------------------------------
+mapfile -t ALL_UBUNTU_SERIES < <(ubuntu-distro-info --all)
+
+SERIES_DIRS=()
+for s in "${ALL_UBUNTU_SERIES[@]}"; do
+    [ -d "$s" ] && SERIES_DIRS+=("$s")
 done
+# "devel" is an alias for the not-yet-released series
+if [ -d devel ]; then
+    SERIES_DIRS+=(devel)
+fi
 
-IFS=$'\n' read -d '' -r -a all_sources < <( find . -mindepth 2 -type f -name \*.sources | sed -e 's,^\./[^/]\+/,,' | sort -u )
-for sources in "${all_sources[@]}"; do
-    case "$sources" in
-    */*)
-        owner="${sources%/*}"
-        repo="${sources#*/}"
-        repo="${repo%.sources}"
-        generate_current_link "$sources" "${owner}-ubuntu-${repo}-current.sources"
-        ;;
-    proposed.sources)
-        generate_current_link "$sources" "current-proposed.sources"
-        ;;
-    ubuntu.sources)
-        generate_current_link "$sources" "current.sources"
-        ;;
-    *)
-        repo="${sources%.sources}"
-        generate_current_link "$sources" "${repo}-current.sources"
-        ;;
+# Non-Ubuntu-series directories (each hosts files that don't vary by series)
+NON_SERIES_DIRS=()
+for d in */; do
+    d="${d%/}"
+    case "$d" in
+        latest|current|.git|.local) continue ;;
     esac
+    is_series=0
+    for s in "${SERIES_DIRS[@]}"; do
+        [ "$d" = "$s" ] && { is_series=1; break; }
+    done
+    [ "$is_series" -eq 0 ] && NON_SERIES_DIRS+=("$d")
 done
+
+# ---------------------------------------------------------------------------
+# Step 1: Rebuild latest/
+#
+# For each .sources file (excluding ubuntu.sources and proposed.sources)
+# that appears across Ubuntu series directories, symlink to the newest.
+# SERIES_DIRS is in chronological order, so last match wins.
+# ---------------------------------------------------------------------------
+rm -f latest/*
+
+declare -A LATEST_TARGET
+for series in "${SERIES_DIRS[@]}"; do
+    for f in "$series"/*.sources; do
+        [ -f "$f" ] || continue
+        base="${f##*/}"
+        case "$base" in
+            ubuntu.sources|proposed.sources) continue ;;
+        esac
+        LATEST_TARGET["$base"]="$series"
+    done
+done
+
+for name in $(printf '%s\n' "${!LATEST_TARGET[@]}" | sort); do
+    ln -s "../${LATEST_TARGET[$name]}/${name}" "latest/${name}"
+done
+
+# ---------------------------------------------------------------------------
+# Step 2: Rebuild .local/links/
+# ---------------------------------------------------------------------------
+rm -f .local/links/*
+
+if [ ! -L current ]; then
+    echo "WARNING: 'current' is not a symlink" >&2
+fi
+
+# Exceptions: always create these two
+ln -s "pool/current/ubuntu.sources" ".local/links/current.sources"
+ln -s "pool/current/proposed.sources" ".local/links/current-proposed.sources"
+
+# (a) PPA sources: current/<owner>/<ppa-name>.sources
+#     -> <owner>-ubuntu-<ppa-name>-current.sources
+for owner_dir in current/*/; do
+    [ -d "$owner_dir" ] || continue
+    owner="$(basename "$owner_dir")"
+    for f in "$owner_dir"/*.sources; do
+        [ -f "$f" ] || continue
+        ppa="$(basename "$f" .sources)"
+        ln -s "pool/current/${owner}/${ppa}.sources" \
+            ".local/links/${owner}-ubuntu-${ppa}-current.sources"
+    done
+done
+
+# Flat .sources files under current/ that are NOT in latest/ and not the exceptions
+for f in current/*.sources; do
+    [ -f "$f" ] || continue
+    name="$(basename "$f" .sources)"
+    case "$name" in
+        ubuntu|proposed) continue ;;  # already handled above
+    esac
+    if [ -e "latest/${name}.sources" ]; then
+        continue  # handled by rule (b)
+    fi
+    ln -s "pool/current/${name}.sources" \
+        ".local/links/${name}-current.sources"
+done
+
+# (b) Sources under latest/
+#     -> <name>-latest.sources
+for f in latest/*.sources; do
+    [ -e "$f" ] || continue
+    name="$(basename "$f" .sources)"
+    ln -s "pool/latest/${name}.sources" \
+        ".local/links/${name}-latest.sources"
+done
+
+# (c) Non-series directories (jessie, stable, mozilla, ...)
+#     -> <name>-<folder>.sources
+for dir in "${NON_SERIES_DIRS[@]}"; do
+    for f in "$dir"/*.sources; do
+        [ -f "$f" ] || continue
+        name="$(basename "$f" .sources)"
+        ln -s "pool/${dir}/${name}.sources" \
+            ".local/links/${name}-${dir}.sources"
+    done
+done
+
+echo "Done. Updated latest/ and .local/links/"
