@@ -2,8 +2,8 @@ Types: deb deb-src
 URIs: https://www.synaptics.com/sites/default/files/Ubuntu/
 Suites: stable
 Components: main non-free
-Signed-By:
- -----BEGIN PGP ARMORED FILE-----
+Signed-By: -----BEGIN PGP PUBLIC KEY BLOCK-----
+ .
  mQINBGM76wkBEAC5dcDFny5/OAMyzs68hLNriNDIzaW7oAHJPzTEduqmNx4Tu5ZV
  efll5BtcyU4yHQmBS7v2ruqe+GaGtxBoE3SZUJDugECzaLBMLFSTcw1ACQOg15QH
  4vNVoEp6H4tz9AQuP0MMdUKKN07sxGQhUL58dJPnpZxfAiEsd5nLQfDE1wcP4Dom
@@ -33,4 +33,4 @@ Signed-By:
  iJIDMdeejuUtgRJ2Ood+hUiUwPxK9I5Ek0ePqPDQ9SKdOMZr1OwAHLxQ9In0SZ0j
  lVsu1a+O7Oc=
  =u/Bz
- -----END PGP ARMORED FILE-----
+ -----END PGP PUBLIC KEY BLOCK-----
