@@ -1,5 +1,5 @@
 Types: deb
-URIs: https://packages.microsoft.com/ubuntu/26.04/prod/
+URIs: https://packages.microsoft.com/ubuntu/26.10/prod/
 Suites: devel
 Components: main
 Architectures: amd64
