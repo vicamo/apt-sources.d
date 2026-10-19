@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+"""Validate the apt-sources pool.
+
+Two independent checks:
+
+  1. Structure: every generated .sources file under a series/fixed directory
+     parses as deb822 and every stanza carries Types/URIs/Suites.
+  2. Drift: `rebuild` is idempotent -- regenerating from .local/definitions/
+     must not change any tracked file.  Run in --check mode so CI fails when
+     the committed tree is stale relative to the definitions.
+
+Exit status is non-zero if any check fails.
+"""
+
+import os
+import subprocess
+import sys
+
+POOL = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+# Directories that hold generated .sources files (series + fixed scopes).
+SKIP_TOP = {".git", ".local", "current", "rolling"}
+
+
+def iter_sources():
+    for entry in sorted(os.listdir(POOL)):
+        if entry in SKIP_TOP:
+            continue
+        top = os.path.join(POOL, entry)
+        if not os.path.isdir(top) or os.path.islink(top):
+            continue
+        for root, _dirs, files in os.walk(top):
+            for name in sorted(files):
+                if name.endswith(".sources"):
+                    yield os.path.join(root, name)
+
+
+def check_structure():
+    errors = []
+    for path in iter_sources():
+        stanzas = []
+        cur = {}
+        for lineno, raw in enumerate(open(path), 1):
+            line = raw.rstrip("\n")
+            if line.strip() == "":
+                if cur:
+                    stanzas.append(cur)
+                    cur = {}
+                continue
+            if line.lstrip().startswith("#"):
+                continue
+            if line[0] in " \t":            # folded continuation
+                continue
+            if ":" not in line:
+                errors.append("%s:%d no field separator: %r" % (path, lineno, line))
+                continue
+            cur[line.split(":", 1)[0].strip().lower()] = True
+        if cur:
+            stanzas.append(cur)
+        if not stanzas:
+            errors.append("%s: no stanzas" % path)
+        for i, s in enumerate(stanzas, 1):
+            for field in ("types", "uris", "suites"):
+                if field not in s:
+                    errors.append("%s: stanza %d missing %s" % (path, i, field))
+    return errors
+
+
+def check_drift():
+    """Fail if regenerating from definitions would change tracked files."""
+    subprocess.check_call([os.path.join(POOL, ".local", "bin", "rebuild")],
+                          stdout=subprocess.DEVNULL)
+    out = subprocess.check_output(["git", "-C", POOL, "status", "--porcelain",
+                                   "--untracked-files=no"], text=True)
+    changed = [l[3:] for l in out.splitlines()]
+    return ["%s is stale: rerun .local/bin/rebuild and commit" % f for f in changed]
+
+
+def main():
+    drift = "--no-drift" not in sys.argv
+    errors = check_structure()
+    if drift:
+        errors += check_drift()
+    if errors:
+        print("FAIL: %d problem(s)" % len(errors))
+        for e in errors:
+            print("  " + e)
+        return 1
+    print("OK")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

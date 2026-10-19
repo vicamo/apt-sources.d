@@ -1,0 +1,252 @@
+#!/usr/bin/env python3
+"""Regenerate the apt-sources pool from .local/definitions/."""
+
+import os
+import re
+import subprocess
+import sys
+from email.parser import Parser
+from urllib.error import URLError
+from urllib.request import urlopen
+
+POOL = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", ".."))
+DEFS = os.path.join(POOL, ".local", "definitions")
+LINKS = os.path.join(POOL, ".local", "links")
+
+ATTR = re.compile(r"^#\s*X-Pool-([A-Za-z-]+):\s*(.*)$")
+
+# Ubuntu mirror hosts.  EOL series are pulled from the distribution tree on
+# old-releases; everything else from the regular archive / security mirrors.
+ARCHIVE = "https://tw.archive.ubuntu.com/ubuntu/"
+SECURITY = "https://security.ubuntu.com/ubuntu/"
+OLD_RELEASES = "https://old-releases.ubuntu.com/ubuntu/"
+RELEASE_ARCHIVE = "https://archive.ubuntu.com/ubuntu/"
+
+# Series past end-of-life: no longer on the archive mirrors.  distro-info data
+# on this host is too stale to detect EOL reliably, so list them explicitly.
+EOL_SERIES = {"oracular"}
+
+
+def archive_release(label):
+    """Read a suite's current identity from the Ubuntu archive."""
+    url = RELEASE_ARCHIVE + "dists/%s/Release" % label
+    try:
+        with urlopen(url, timeout=30) as response:
+            fields = Parser().parsestr(response.read().decode("utf-8"))
+    except (URLError, OSError, UnicodeError) as exc:
+        raise RuntimeError("cannot determine %s release from %s: %s"
+                           % (label, url, exc)) from exc
+    code = fields.get("Codename", "")
+    version = fields.get("Version", "")
+    match = re.fullmatch(r"(\d+)\.(04|10)(?:\.\d+)?(?: LTS)?", version)
+    if (fields.get("Origin") != "Ubuntu"
+            or not re.fullmatch(r"[a-z]+", code) or code == "devel"
+            or not match or (label != "devel" and code != label)):
+        raise RuntimeError("invalid Ubuntu release metadata from %s" % url)
+    version = "%s.%s" % match.group(1, 2)
+    # Ubuntu's April releases in even-numbered years are LTS releases.
+    is_lts = int(match.group(1)) % 2 == 0 and match.group(2) == "04"
+    return code, version, is_lts
+
+
+def ubuntu_series():
+    """Combine local release history with current archive metadata.
+
+    Return the ordered (codename, version, is_lts) entries and devel's
+    concrete codename. Never infer the alias from directory ordering.
+    """
+    out = subprocess.check_output(["ubuntu-distro-info", "--all", "-f"], text=True)
+    releases = {}
+    for line in out.splitlines():
+        m = re.match(r'Ubuntu\s+(\d+\.\d+)(\s+LTS)?\s+"(\w+)', line)
+        if m:
+            code = m.group(3).lower()
+            releases[code] = (code, m.group(1), bool(m.group(2)))
+
+    devel = archive_release("devel")
+    releases[devel[0]] = devel
+    # Older hosts may lack metadata for concrete series already in the pool.
+    for label in sorted(os.listdir(POOL)):
+        path = os.path.join(POOL, label)
+        if (label != "devel" and label not in releases
+                and not os.path.islink(path)
+                and os.path.isfile(os.path.join(path, "ubuntu.sources"))):
+            releases[label] = archive_release(label)
+    series = sorted(releases.values(),
+                    key=lambda item: tuple(map(int, item[1].split("."))))
+    return series, devel[0]
+
+
+def latest_lts_at_or_before(index, series):
+    for i in range(index, -1, -1):
+        if series[i][2]:
+            return series[i][0]
+    raise RuntimeError("no LTS at or before index %d" % index)
+
+
+def parse_definition(path):
+    attrs = {}
+    body = []
+    with open(path) as fh:
+        for line in fh:
+            m = ATTR.match(line)
+            if m:
+                attrs[m.group(1).lower()] = m.group(2).strip()
+            else:
+                body.append(line)
+    return attrs, "".join(body)
+
+
+def build_targets(series, devel_code):
+    """Return [(label, series_index), ...] for every series dir to regenerate.
+
+    Concrete directories present on disk keep their codename as the label.
+    "devel" keeps its own directory but uses the archive's concrete release
+    metadata, even when that release also has a directory in the pool.
+    """
+    present = [s for s in series if os.path.isdir(os.path.join(POOL, s[0]))]
+    if not present:
+        raise RuntimeError("no Ubuntu series directories found under %s" % POOL)
+
+    targets = [(s[0], series.index(s)) for s in present]
+
+    devel_idx = next(i for i, s in enumerate(series) if s[0] == devel_code)
+    targets.append(("devel", devel_idx))
+    return targets
+
+
+def substitute(body, label, version, suite):
+    eol = label in EOL_SERIES
+    archive = OLD_RELEASES if eol else ARCHIVE
+    security = OLD_RELEASES if eol else SECURITY
+    return (body.replace("{series}", label)
+                .replace("{version}", version)
+                .replace("{suite}", suite)
+                .replace("{archive}", archive)
+                .replace("{security}", security))
+
+
+def _emit(path, text):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as fh:
+        fh.write(text)
+
+
+def generate(series, targets):
+    written = []
+    for root, _dirs, files in os.walk(DEFS):
+        for name in sorted(files):
+            if not name.endswith(".sources"):
+                continue
+            path = os.path.join(root, name)
+            rel = os.path.relpath(path, DEFS)
+            attrs, body = parse_definition(path)
+            scope = attrs.get("scope", "ubuntu")
+
+            if scope == "fixed":
+                out = os.path.join(POOL, rel)
+                _emit(out, body)
+                written.append(out)
+                continue
+
+            policy = attrs.get("suite-policy", "codename")
+            for label, idx in targets:
+                _code, version, _lts = series[idx]
+                if policy == "lts":
+                    suite = latest_lts_at_or_before(idx, series)
+                else:
+                    suite = label
+                text = substitute(body, label, version, suite)
+                # fixed-scope defs carry their dir in rel; ubuntu defs do not
+                out = os.path.join(POOL, label, rel)
+                _emit(out, text)
+                written.append(out)
+    return written
+
+
+def _clear_dir(path):
+    for name in os.listdir(path):
+        full = os.path.join(path, name)
+        if os.path.islink(full) or os.path.isfile(full):
+            os.unlink(full)
+
+
+def _flat_sources(dirpath):
+    """Top-level .sources basenames in dirpath (sorted), ignoring subdirs."""
+    if not os.path.isdir(dirpath):
+        return []
+    return sorted(n for n in os.listdir(dirpath)
+                  if n.endswith(".sources")
+                  and os.path.isfile(os.path.join(dirpath, n)))
+
+
+def rebuild_links(series_labels):
+    """Rebuild .local/links/: flat-named links apt consumes.
+
+    The ``pool/current/`` link targets resolve through each system's own
+    ``current`` symlink (which this script never creates -- it is the user's
+    pointer to their active series).  The *set* of files is identical across
+    every series directory, so enumerate from the always-present ``devel``
+    directory rather than the optional ``current`` symlink.  Non-series
+    directories (jessie, stable, mozilla, ...) are every top-level directory
+    that is neither an Ubuntu series dir nor a generated/meta directory.
+    """
+    os.makedirs(LINKS, exist_ok=True)
+    _clear_dir(LINKS)
+
+    def link(target, name):
+        os.symlink(target, os.path.join(LINKS, name))
+
+    # Exceptions: the two per-release-only files, always via current/
+    link("pool/current/ubuntu.sources", "current.sources")
+    link("pool/current/proposed.sources", "current-proposed.sources")
+
+    # (a) PPA sources: current/<owner>/<ppa>.sources, enumerated from devel/
+    devel = os.path.join(POOL, "devel")
+    for owner in sorted(os.listdir(devel)):
+        owner_dir = os.path.join(devel, owner)
+        if not os.path.isdir(owner_dir):
+            continue
+        for base in _flat_sources(owner_dir):
+            ppa = base[:-len(".sources")]
+            link("pool/current/%s/%s" % (owner, base),
+                 "%s-ubuntu-%s-current.sources" % (owner, ppa))
+
+    # Flat files under devel/, except the two per-release-only exceptions
+    for base in _flat_sources(devel):
+        name = base[:-len(".sources")]
+        if name in ("ubuntu", "proposed"):
+            continue
+        link("pool/current/%s" % base, "%s-current.sources" % name)
+
+    # (b) Non-series directories (jessie, stable, mozilla, rolling, ...).
+    # "rolling" is a symlink to the most recent released series (the one just
+    # behind devel) and is treated as a series dir.
+    meta = {"current", ".git", ".local", "rolling"}
+    for d in sorted(os.listdir(POOL)):
+        full = os.path.join(POOL, d)
+        if d in meta or d in series_labels or not os.path.isdir(full):
+            continue
+        for base in _flat_sources(full):
+            name = base[:-len(".sources")]
+            link("pool/%s/%s" % (d, base), "%s-%s.sources" % (name, d))
+
+
+def main():
+    series, devel_code = ubuntu_series()
+    targets = build_targets(series, devel_code)
+    written = generate(series, targets)
+
+    rebuild_links({label for label, _idx in targets})
+
+    print("Wrote %d .sources files across %d targets; "
+          "rebuilt .local/links/."
+          % (len(written), len(targets)))
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except RuntimeError as exc:
+        print("rebuild: %s" % exc, file=sys.stderr)
+        sys.exit(1)

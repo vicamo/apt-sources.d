@@ -1,0 +1,81 @@
+name: validate-sources
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # Enumerate the Ubuntu series the pool carries (one directory each, plus the
+  # "devel" alias dir), so the test matrix tracks the repo instead of a
+  # hardcoded list.
+  series:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.list.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: list
+        name: Discover series directories
+        run: |
+          series=$(for d in */; do
+            d=${d%/}
+            case "$d" in
+              .*|latest|current|rolling) continue ;;
+            esac
+            [ -f "$d/ubuntu.sources" ] && printf '%s\n' "$d"
+          done | sort | tr '\n' ' ')
+          echo "series: $series"
+          json=$(printf '%s\n' $series | python3 -c 'import json,sys; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))')
+          echo "matrix=$json" >> "$GITHUB_OUTPUT"
+
+  validate:
+    needs: series
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        series: ${{ fromJSON(needs.series.outputs.matrix) }}
+    # Run inside the container for the series under test, so check/rebuild see
+    # that release's distro-info and tools -- the real usage environment.
+    container:
+      image: ubuntu:${{ matrix.series }}
+    steps:
+      - name: Install dependencies
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          if ! apt-get update -o APT::Update::Error-Mode=any -qq; then
+            # EOL images retain archive/security URLs after their suites move
+            # to old-releases. Repair both deb822 and legacy bootstrap sources.
+            for source in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+              [ -f "$source" ] || continue
+              sed -i -E \
+                -e 's#https?://([[:alnum:].-]+\.)?archive\.ubuntu\.com/ubuntu/?#http://old-releases.ubuntu.com/ubuntu/#g' \
+                -e 's#https?://security\.ubuntu\.com/ubuntu/?#http://old-releases.ubuntu.com/ubuntu/#g' \
+                -e 's#https?://ports\.ubuntu\.com/ubuntu-ports/?#http://old-releases.ubuntu.com/ubuntu/#g' \
+                "$source"
+            done
+            apt-get update -o APT::Update::Error-Mode=any -qq
+          fi
+          apt-get install -y -qq ca-certificates git distro-info python3
+
+      - uses: actions/checkout@v7
+        with:
+          # Check out into the canonical install path so POOL matches the path
+          # baked into generated mirror URIs and drift stays zero.
+          path: pool
+
+      - name: Simulate install and validate
+        run: |
+          git config --global --add safe.directory '*'
+          # Deploy to the canonical location apt uses.
+          mkdir -p /etc/apt/sources.list.d
+          cp -a pool /etc/apt/sources.list.d/pool
+          cd /etc/apt/sources.list.d/pool
+          # "current" is each system's own pointer (gitignored); recreate it
+          # for the series under test, exactly as a real install would.
+          ln -sfn "${{ matrix.series }}/" current
+          echo "current -> $(readlink current)"
+          ./.local/bin/check --no-drift
+          ./.local/bin/rebuild
+          git diff --exit-code

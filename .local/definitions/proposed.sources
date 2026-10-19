@@ -1,0 +1,6 @@
+# X-Pool-Scope: ubuntu
+Types: deb deb-src
+URIs: {archive}
+Suites: {series}-proposed
+Components: main restricted universe multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg

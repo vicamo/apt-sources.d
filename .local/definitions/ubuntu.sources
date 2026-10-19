@@ -1,0 +1,12 @@
+# X-Pool-Scope: ubuntu
+Types: deb deb-src
+URIs: {archive}
+Suites: {series} {series}-updates {series}-backports
+Components: main restricted universe multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+Types: deb deb-src
+URIs: {security}
+Suites: {series}-security
+Components: main restricted universe multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
