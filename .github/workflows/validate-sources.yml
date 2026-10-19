@@ -79,3 +79,48 @@ jobs:
           ./.local/bin/check --no-drift
           ./.local/bin/rebuild
           git diff --exit-code
+
+      - name: Test apt with the installed pool sources
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          # Disable the image's defaults so only the pool supplies Ubuntu.
+          for source in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            [ -f "$source" ] || continue
+            mv "$source" "$source.disabled"
+          done
+
+          # Test fixed-scope repositories and the current Ubuntu archive links.
+          # Release-dependent third-party repositories may not publish a suite
+          # even when their definitions use X-Pool-Assume-Available.
+          # Read metadata from definitions: rebuild strips X-Pool attributes
+          # from generated files.
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import runpy
+
+          sources = Path('/etc/apt/sources.list.d')
+          pool = sources / 'pool'
+          definitions = pool / '.local/definitions'
+          parse_definition = runpy.run_path(str(pool / '.local/bin/rebuild'))['parse_definition']
+          for link in sorted((pool / '.local/links').glob('*.sources')):
+              target = (sources / os.readlink(link)).resolve()
+              relative = target.relative_to(pool)
+              definition = definitions / relative
+              if not definition.is_file():
+                  # Resolve current/rolling aliases, then drop the series dir.
+                  definition = definitions.joinpath(*relative.parts[1:])
+              attrs, _body = parse_definition(definition)
+              if (attrs.get('scope', 'ubuntu') != 'fixed'
+                      and link.name not in ('current.sources', 'current-proposed.sources')):
+                  continue
+              destination = sources / link.name
+              destination.symlink_to(os.readlink(link))
+              assert destination.is_file(), destination
+              print('Installed source:', link.name)
+          PY
+
+          # Discard bootstrap indexes: update and reinstall must use this source.
+          find /var/lib/apt/lists -type f -delete
+          apt-get update -o APT::Update::Error-Mode=any -qq
+          apt-get install --reinstall -y -qq ca-certificates
