@@ -1,18 +1,6 @@
 Types: deb deb-src
 URIs: https://tw.archive.ubuntu.com/ubuntu/
-Suites: plucky
-Components: main restricted universe multiverse
-Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-
-Types: deb deb-src
-URIs: https://tw.archive.ubuntu.com/ubuntu/
-Suites: plucky-updates
-Components: main restricted universe multiverse
-Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-
-Types: deb deb-src
-URIs: https://tw.archive.ubuntu.com/ubuntu/
-Suites: plucky-backports
+Suites: plucky plucky-updates plucky-backports
 Components: main restricted universe multiverse
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
