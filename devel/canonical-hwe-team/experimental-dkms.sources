@@ -1,6 +1,6 @@
 Types: deb
 URIs: https://ppa.launchpadcontent.net/canonical-hwe-team/experimental-dkms/ubuntu/
-Suites: resolute
+Suites: devel
 Components: main
 Signed-By: -----BEGIN PGP PUBLIC KEY BLOCK-----
  .
