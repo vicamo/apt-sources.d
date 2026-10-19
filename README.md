@@ -123,3 +123,21 @@ never in the generated pool.
     .local/bin/rebuild          # regenerate everything
     .local/bin/check            # structure + drift (CI runs this)
     git add -A && git commit
+
+## New series detection
+
+`.local/bin/detect-devel-series` prints only the codename currently published
+by the Ubuntu archive's `devel/Release` file. It is a standalone, read-only
+utility: it does not create directories, run rebuild, or write CI outputs.
+
+The `detect-new-series` workflow runs it weekly (and on demand). If that
+codename has no pool directory, the workflow creates it and runs `rebuild`,
+sets its GitHub Actions output, and opens a pull request. Review the generated
+sources before merging.
+
+The workflow runs in an `ubuntu:devel` job container. Its checkout is also
+bind-mounted at `/etc/apt/sources.list.d/pool`, where regeneration, validation,
+and pull-request creation run against the same working tree. This keeps
+mirrorlist URIs at the canonical install path without copying or syncing files.
+
+    .local/bin/detect-devel-series    # print the current development codename
