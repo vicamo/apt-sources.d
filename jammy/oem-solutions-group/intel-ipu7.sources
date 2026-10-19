@@ -1,3 +1,5 @@
+# No published repository for this target or an older pool release.
+Enabled: no
 Types: deb
 URIs: https://ppa.launchpadcontent.net/oem-solutions-group/intel-ipu7/ubuntu/
 Suites: jammy

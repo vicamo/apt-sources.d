@@ -1,3 +1,4 @@
+# X-Pool-Assume-Available: yes
 # X-Pool-Scope: ubuntu
 Types: deb
 URIs: https://ppa.launchpadcontent.net/canonical-hwe-team/experimental-next/ubuntu/

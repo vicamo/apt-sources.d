@@ -1,6 +1,6 @@
 Types: deb
 URIs: https://ppa.launchpadcontent.net/canonical-hwe-team/oem-kernel-next/ubuntu/
-Suites: questing
+Suites: noble
 Components: main
 Signed-By: -----BEGIN PGP PUBLIC KEY BLOCK-----
  .

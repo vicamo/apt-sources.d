@@ -1,4 +1,5 @@
 # X-Pool-Scope: ubuntu
+# X-Pool-Suite-Policy: lts
 Types: deb
 URIs: https://ppa.launchpadcontent.net/oem-solutions-group/pc-sanity-daily/ubuntu/
 Suites: {series}

@@ -1,4 +1,6 @@
+# X-Pool-Assume-Available: yes
 # X-Pool-Scope: ubuntu
+# X-Pool-Suite-Policy: lts
 Types: deb
 URIs: https://ppa.launchpadcontent.net/canonical-hwe-team/oem-kernel-next/ubuntu/
 Suites: {series}

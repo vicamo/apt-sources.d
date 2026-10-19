@@ -1,3 +1,4 @@
+# X-Pool-Assume-Available: yes
 # X-Pool-Scope: ubuntu
 Types: deb deb-src
 URIs: https://private-ppa.launchpadcontent.net/canonical-hwe-team/linux-firmware-staging/ubuntu

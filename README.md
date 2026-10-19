@@ -15,7 +15,8 @@ attributes (stripped from the output) and `{…}` placeholders.
 
 ## Placeholders
 
-    {series}    series codename (noble); "devel" for the dev-series dir
+    {series}    selected suite alias: devel for target-tracking devel sources,
+                concrete codename for LTS or pinned-codename policies
     {version}   Ubuntu version number (24.04)
     {suite}     suite chosen by X-Pool-Suite-Policy
     {archive}   archive mirror ( old-releases for EOL series )
@@ -26,11 +27,45 @@ attributes (stripped from the output) and `{…}` placeholders.
     # X-Pool-Scope: ubuntu      expand across every Ubuntu series directory
     # X-Pool-Scope: fixed       emit verbatim to one fixed directory
     # X-Pool-Output: <dir>      target dir for a fixed-scope file (e.g. stable)
-    # X-Pool-Suite-Policy: codename | lts
+    # X-Pool-Suite-Policy: codename | lts | <concrete codename>
           codename  {suite} = the target codename (default)
           lts       {suite} = the target codename if it is an LTS, else the
                     latest LTS at or before it (for upstreams that only ship
                     for LTS releases, e.g. hashicorp)
+          <codename> pin {series}, {suite}, and {version} to that release
+    # X-Pool-Assume-Available: yes | no
+          bypass availability checks for this definition (default: no)
+
+For every public third-party Ubuntu definition (including PPAs), rebuild probes
+`dists/<codename>/Release` from the target release backwards and uses the newest
+published candidate among releases at least as new as the oldest pool target.
+The candidate supplies `{version}`. With the default `codename` policy, sources
+under `devel/` keep `devel` in `{series}` and `{suite}`; concrete output
+directories use the selected candidate's codename. Availability checks use the
+candidate's concrete suite without changing the devel output alias.
+The `lts` policy selects only LTS candidates and keeps the selected LTS codename
+even under `devel/`. A pinned-codename policy likewise keeps its concrete suite
+and version. Literal `Suites:` values in a definition are preserved and checked
+as written. Fixed-scope definitions remain verbatim. These rules also apply
+when `X-Pool-Assume-Available: yes` bypasses repository checks.
+Ubuntu archive definitions containing `{archive}` or `{security}` retain their
+release-specific suites and the `devel` alias.
+
+Only HTTP 404 triggers fallback. Network errors, malformed metadata and other
+HTTP errors (including 401/403) stop the rebuild before generated files are
+written. Fixed-scope definitions remain verbatim and are not remapped to
+Ubuntu releases.
+If no candidate is published, rebuild emits a disabled source (`Enabled: no`)
+and reports it, keeping apt from requesting an unavailable repository.
+
+Add `# X-Pool-Assume-Available: yes` to an individual definition to bypass its
+repository checks and assume the target release is published (or the latest
+LTS under LTS policy). This can emit unpublished repositories; it is an
+explicit override.
+All definitions are generated, including those requiring credentials. Use
+`X-Pool-Assume-Available: yes` for these repositories to skip availability
+requests; credentials remain the user's responsibility. Ubuntu's `devel`
+discovery still fetches archive metadata.
 
 Release history comes from `ubuntu-distro-info --all -f`, supplemented by
 `https://archive.ubuntu.com/ubuntu/dists/devel/Release` on every rebuild.

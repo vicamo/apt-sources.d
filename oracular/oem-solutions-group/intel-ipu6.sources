@@ -1,6 +1,6 @@
 Types: deb
 URIs: https://ppa.launchpadcontent.net/oem-solutions-group/intel-ipu6/ubuntu/
-Suites: oracular
+Suites: noble
 Components: main
 Signed-By: -----BEGIN PGP PUBLIC KEY BLOCK-----
  .

@@ -5,8 +5,9 @@ import os
 import re
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from email.parser import Parser
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
 POOL = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -132,36 +133,108 @@ def _emit(path, text):
         fh.write(text)
 
 
+def repository_release(uri, suite, cache):
+    """Check published metadata, treating only 404 as an absent suite."""
+    url = uri.rstrip("/") + "/dists/%s/Release" % suite
+    if url not in cache:
+        try:
+            with urlopen(url, timeout=30) as response:
+                fields = Parser().parsestr(response.read().decode("utf-8"))
+            identity = fields.get("Codename", fields.get("Suite"))
+            if (identity != suite or not fields.get("Components")
+                    or not fields.get("Architectures")):
+                raise RuntimeError("invalid repository metadata from %s" % url)
+            cache[url] = True
+        except HTTPError as exc:
+            exc.close()
+            if exc.code != 404:
+                raise RuntimeError("cannot check %s: HTTP %s" % (url, exc.code)) from exc
+            cache[url] = False
+        except (URLError, OSError, UnicodeError) as exc:
+            raise RuntimeError("cannot check %s: %s" % (url, exc)) from exc
+    return cache[url]
+
+
+def available_source(body, index, series, policy, cache, assume_available=False,
+                     minimum_index=0, label=None):
+    """Select repository metadata separately from the output's suite alias."""
+    if policy in ("codename", "lts"):
+        start = 0 if assume_available else minimum_index
+        candidates = list(reversed(series[start:index + 1]))
+        if policy == "lts":
+            candidates = [entry for entry in candidates if entry[2]]
+    else:
+        candidates = [entry for entry in series if entry[0] == policy]
+
+    def render(code, version):
+        output_suite = "devel" if label == "devel" and policy == "codename" else code
+        return substitute(body, output_suite, version, output_suite)
+
+    for code, version, _lts in candidates:
+        text = substitute(body, code, version, code)
+        fields = Parser().parsestr(text)
+        uris = fields.get("URIs", "").split()
+        suites = fields.get("Suites", "").split()
+        if len(uris) != 1 or len(suites) != 1:
+            raise RuntimeError("third-party definition needs one URI and one release suite")
+        if assume_available or repository_release(uris[0], suites[0], cache):
+            return render(code, version)
+    if candidates:
+        code, version, _lts = candidates[0]
+    elif policy == "lts":
+        code = latest_lts_at_or_before(index, series)
+        _code, version, _lts = next(entry for entry in series if entry[0] == code)
+    else:
+        code, version, _lts = series[index]
+    text = render(code, version)
+    text = re.sub(r"^Enabled:.*\n?", "", text, flags=re.MULTILINE | re.IGNORECASE)
+    return ("# No published repository for this target or an older pool release.\n"
+            "Enabled: no\n" + text)
+
+
+def generate_definition(path, series, targets):
+    rel = os.path.relpath(path, DEFS)
+    attrs, body = parse_definition(path)
+    if attrs.get("scope", "ubuntu") == "fixed":
+        return [(os.path.join(POOL, rel), body)]
+
+    policy = attrs.get("suite-policy", "codename")
+    if policy not in ("codename", "lts") and policy not in {s[0] for s in series}:
+        raise RuntimeError("%s: invalid suite policy %s" % (rel, policy))
+    assume_available = attrs.get("assume-available", "no").lower()
+    if assume_available not in ("yes", "no"):
+        raise RuntimeError("%s: X-Pool-Assume-Available must be yes or no" % rel)
+    availability = {}
+    pending = []
+    for label, idx in targets:
+        _code, version, _lts = series[idx]
+        suite = latest_lts_at_or_before(idx, series) if policy == "lts" else label
+        if "{archive}" in body or "{security}" in body:
+            text = substitute(body, label, version, suite)
+        else:
+            text = available_source(body, idx, series, policy, availability,
+                                    assume_available == "yes",
+                                    min(i for _label, i in targets), label=label)
+            if text.startswith("# No published repository"):
+                print("Disabling %s/%s: no published repository at or before target."
+                      % (label, rel), file=sys.stderr)
+        pending.append((os.path.join(POOL, label, rel), text))
+    return pending
+
+
 def generate(series, targets):
-    written = []
-    for root, _dirs, files in os.walk(DEFS):
-        for name in sorted(files):
-            if not name.endswith(".sources"):
-                continue
-            path = os.path.join(root, name)
-            rel = os.path.relpath(path, DEFS)
-            attrs, body = parse_definition(path)
-            scope = attrs.get("scope", "ubuntu")
-
-            if scope == "fixed":
-                out = os.path.join(POOL, rel)
-                _emit(out, body)
-                written.append(out)
-                continue
-
-            policy = attrs.get("suite-policy", "codename")
-            for label, idx in targets:
-                _code, version, _lts = series[idx]
-                if policy == "lts":
-                    suite = latest_lts_at_or_before(idx, series)
-                else:
-                    suite = label
-                text = substitute(body, label, version, suite)
-                # fixed-scope defs carry their dir in rel; ubuntu defs do not
-                out = os.path.join(POOL, label, rel)
-                _emit(out, text)
-                written.append(out)
-    return written
+    paths = sorted(os.path.join(root, name)
+                   for root, _dirs, files in os.walk(DEFS)
+                   for name in files if name.endswith(".sources"))
+    # Check independent repositories concurrently; preserve deterministic output
+    # order and finish all checks before modifying any generated files.
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = list(executor.map(
+            lambda path: generate_definition(path, series, targets), paths))
+    pending = [item for result in results for item in result]
+    for out, text in pending:
+        _emit(out, text)
+    return [out for out, _text in pending]
 
 
 def _clear_dir(path):
