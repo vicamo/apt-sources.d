@@ -1,0 +1,14 @@
+# apt mirrorlist: Ubuntu archive (main/updates/backports).
+#
+# Edit this file in place for your site; rebuild points apt here
+# directly (path derived from the repo location).
+#
+# One URI per line; apt tries them in order with automatic failover.
+# Optional per-line filters, space-separated after the URI, e.g.:
+#   https://mirror.example.com/ubuntu/   priority:1
+#   http://archive.ubuntu.com/ubuntu/    arch=amd64,i386
+#
+# The default below auto-selects a nearby mirror and falls back to the
+# canonical archive.  Replace with your own local mirror for best speed.
+mirror+https://mirrors.ubuntu.com/mirrors.txt
+http://archive.ubuntu.com/ubuntu/

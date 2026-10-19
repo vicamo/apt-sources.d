@@ -19,8 +19,8 @@ attributes (stripped from the output) and `{…}` placeholders.
                 concrete codename for LTS or pinned-codename policies
     {version}   Ubuntu version number (24.04)
     {suite}     suite chosen by X-Pool-Suite-Policy
-    {archive}   archive mirror ( old-releases for EOL series )
-    {security}  security mirror ( old-releases for EOL series )
+    {archive}   archive mirrorlist ( old-releases list for EOL series )
+    {security}  security mirrorlist ( old-releases list for EOL series )
 
 ## Attributes
 
@@ -93,6 +93,29 @@ detect EOL automatically.
    codename.
 4. Repos not tracking Ubuntu     — `Scope: fixed` (jessie/slack, stable/*,
    mozilla) pin a fixed suite with no series expansion.
+
+## Mirrors
+
+Generated sources reference apt mirrorlists by path, not a concrete host, so
+the committed tree carries no site-specific mirror:
+
+    URIs: mirror+file:<repo>/.local/mirrors/ubuntu.list
+
+apt's mirror+file method reads the real hosts from that file (one URI per
+line, tried in order with failover). The lists live in this repo under
+.local/mirrors/ and are used in place -- no copying. Three lists are used:
+
+    .local/mirrors/ubuntu.list               {archive}  (main/updates/backports)
+    .local/mirrors/ubuntu-security.list      {security} (security updates)
+    .local/mirrors/ubuntu-old-releases.list  EOL series (archive + security)
+
+Per-system setup: edit the lists in place for your site.
+
+    sudoedit .local/mirrors/ubuntu.list    # add your local mirror on top
+
+The shipped lists default to a geo-auto mirror with the canonical host as
+fallback, so they work unedited. The host strings live only in these lists,
+never in the generated pool.
 
 ## Workflow
 

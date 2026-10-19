@@ -1,0 +1,10 @@
+# apt mirrorlist: Ubuntu security updates.
+#
+# Edit this file in place for your site; rebuild points apt here
+# directly (path derived from the repo location).
+#
+# One URI per line; apt tries them in order with automatic failover.
+#
+# Security updates are best taken from the canonical host to avoid mirror
+# lag; add a local mirror above it only if it syncs security promptly.
+http://security.ubuntu.com/ubuntu/

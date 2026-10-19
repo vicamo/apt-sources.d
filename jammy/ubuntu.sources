@@ -1,11 +1,11 @@
 Types: deb deb-src
-URIs: https://tw.archive.ubuntu.com/ubuntu/
+URIs: mirror+file:/etc/apt/sources.list.d/pool/.local/mirrors/ubuntu.list
 Suites: jammy jammy-updates jammy-backports
 Components: main restricted universe multiverse
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
 Types: deb deb-src
-URIs: https://security.ubuntu.com/ubuntu/
+URIs: mirror+file:/etc/apt/sources.list.d/pool/.local/mirrors/ubuntu-security.list
 Suites: jammy-security
 Components: main restricted universe multiverse
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg

@@ -1,0 +1,8 @@
+# apt mirrorlist: Ubuntu old-releases (EOL series).
+#
+# Edit this file in place for your site; rebuild points apt here
+# directly (path derived from the repo location).
+#
+# Used for series past end-of-life, which are removed from the regular
+# archive/security mirrors and served only from old-releases.
+http://old-releases.ubuntu.com/ubuntu/

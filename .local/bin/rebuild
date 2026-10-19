@@ -13,14 +13,19 @@ from urllib.request import urlopen
 POOL = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DEFS = os.path.join(POOL, ".local", "definitions")
 LINKS = os.path.join(POOL, ".local", "links")
+MIRRORS = os.path.join(POOL, ".local", "mirrors")
 
 ATTR = re.compile(r"^#\s*X-Pool-([A-Za-z-]+):\s*(.*)$")
 
-# Ubuntu mirror hosts.  EOL series are pulled from the distribution tree on
-# old-releases; everything else from the regular archive / security mirrors.
-ARCHIVE = "https://tw.archive.ubuntu.com/ubuntu/"
-SECURITY = "https://security.ubuntu.com/ubuntu/"
-OLD_RELEASES = "https://old-releases.ubuntu.com/ubuntu/"
+# Generated sources reference apt mirrorlists by path rather than a concrete
+# host, so the committed tree carries no site-specific mirror.  The lists live
+# in this repo under .local/mirrors/ and are edited in place per system; apt
+# reads them via the mirror+file method with failover.  The paths are absolute
+# and derived from this script's own location, so they are correct wherever
+# the repo is cloned.
+ARCHIVE = "mirror+file:" + os.path.join(MIRRORS, "ubuntu.list")
+SECURITY = "mirror+file:" + os.path.join(MIRRORS, "ubuntu-security.list")
+OLD_RELEASES = "mirror+file:" + os.path.join(MIRRORS, "ubuntu-old-releases.list")
 RELEASE_ARCHIVE = "https://archive.ubuntu.com/ubuntu/"
 
 # Series past end-of-life: no longer on the archive mirrors.  distro-info data

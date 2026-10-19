@@ -1,5 +1,5 @@
 Types: deb deb-src
-URIs: https://old-releases.ubuntu.com/ubuntu/
+URIs: mirror+file:/etc/apt/sources.list.d/pool/.local/mirrors/ubuntu-old-releases.list
 Suites: oracular-proposed
 Components: main restricted universe multiverse
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
