@@ -1,0 +1,11 @@
+Types: deb deb-src
+URIs: mirror+file:/etc/apt/sources.list.d/pool/.local/mirrors/ubuntu.list
+Suites: tenacious tenacious-updates tenacious-backports
+Components: main restricted universe multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+Types: deb deb-src
+URIs: mirror+file:/etc/apt/sources.list.d/pool/.local/mirrors/ubuntu-security.list
+Suites: tenacious-security
+Components: main restricted universe multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
