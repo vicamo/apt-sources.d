@@ -39,7 +39,7 @@ jobs:
     # Run inside the container for the series under test, so check/rebuild see
     # that release's distro-info and tools -- the real usage environment.
     container:
-      image: ubuntu:${{ matrix.series }}
+      image: ghcr.io/vicamo/ubuntu:${{ matrix.series }}
     steps:
       - name: Install dependencies
         run: |
