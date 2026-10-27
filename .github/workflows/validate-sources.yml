@@ -21,7 +21,7 @@ jobs:
           series=$(for d in */; do
             d=${d%/}
             case "$d" in
-              .*|latest|current|rolling) continue ;;
+              .*|current|lts|rolling) continue ;;
             esac
             [ -f "$d/ubuntu.sources" ] && printf '%s\n' "$d"
           done | sort | tr '\n' ' ')
@@ -108,7 +108,7 @@ jobs:
               relative = target.relative_to(pool)
               definition = definitions / relative
               if not definition.is_file():
-                  # Resolve current/rolling aliases, then drop the series dir.
+                  # Resolve current/lts/rolling aliases, then drop the series dir.
                   definition = definitions.joinpath(*relative.parts[1:])
               attrs, _body = parse_definition(definition)
               if (attrs.get('scope', 'ubuntu') != 'fixed'
