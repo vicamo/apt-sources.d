@@ -297,10 +297,11 @@ def rebuild_links(series_labels):
             continue
         link("pool/current/%s" % base, "%s-current.sources" % name)
 
-    # (b) Non-series directories (jessie, stable, mozilla, rolling, ...).
+    # (b) Non-series directories (jessie, stable, mozilla, rolling, lts, ...).
     # "rolling" is a symlink to the most recent released series (the one just
-    # behind devel) and is treated as a series dir.
-    meta = {"current", ".git", ".local", "rolling"}
+    # behind devel) and "lts" is the latest stable. They are treated as a series
+    # dir.
+    meta = {"current", ".git", ".local", "lts", "rolling"}
     for d in sorted(os.listdir(POOL)):
         full = os.path.join(POOL, d)
         if d in meta or d in series_labels or not os.path.isdir(full):

@@ -19,7 +19,7 @@ import sys
 POOL = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # Directories that hold generated .sources files (series + fixed scopes).
-SKIP_TOP = {".git", ".local", "current", "rolling"}
+SKIP_TOP = {".git", ".local", "current", "lts", "rolling"}
 
 
 def iter_sources():
